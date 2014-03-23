@@ -1,0 +1,220 @@
+import java.util.ArrayList; 
+import java.awt.Point; 
+import java.util.*; 
+
+/*
+ * Class performs a Graham_Scan algorithm sort for calculating the convex hull of a set of points. 
+ */
+public class Graham_Scan {
+	//Used to add the inputs for the calculation of the convex hull. 
+	private static List<Point> items = new ArrayList<Point>(); 
+
+	//Used to return the points the make up the convex hull. 
+	private static List<Point> convex_hull = new ArrayList<Point>();
+
+	//Is used for calculating the achor point of the convex hull. 	
+	private static Point achorPoint; 
+	
+	//Method Used to determine whether or not a point is to the left of the line. 
+	public static int ccw(Point p1, Point p2, Point p3){
+		return ((p2.x - p1.x)*(p3.y-p1.y))-((p2.y-p1.y)*(p3.x-p1.x));
+	}
+
+	//Method used to addPoints to the Graham_Scan class before determining the convex hull of the set of points. 
+	public static void addPoint(Point p){
+		items.add(p); 
+	}
+	
+	//Method Clears the list of points and the convex hull set of points. 
+	public static void clear(){
+			items.clear(); 
+			convex_hull.clear(); 
+	}
+	
+	//Method searches for the achorPoint of the convex hull. 
+	//Returns the achorPoint. 
+	private static Point anchorPointSearch(){
+		//Used to calculate the lowest y-coord
+		int minY = 99999;	
+		int index = 0; 
+		int count = 0; 
+		boolean hasSameYCoord = false; 
+
+		//Finds the lowest y-coordinate. 
+		for(int i = 0; i < items.size(); ++i){
+			if(minY >= items.get(i).y){
+				minY = items.get(i).y; 
+				index = i; 
+			}
+		}
+
+		//Current Achor with the minimum y-coordinate. 
+		Point achor = items.get(index); 
+		//Checks if there is another point with same y-coordinate. 
+		for(int i = 0; i < items.size(); ++i){
+				//Found two points with same y-coordinate. 
+				if(count == 2){
+					hasSameYCoord = true; 
+					break; 
+				}
+				//Checks if both points have same y coordinate. 
+				if(achor.y == items.get(i).y){
+					count++; 
+				}
+		}
+		
+		//Case where there is two points with the minimum y-coordinate 
+		//Find the maximum x coordinate 
+		if(hasSameYCoord){
+			int maxX = -99999; 
+			int index_X = 0; 
+			
+			//Finds the max x coordinate. 
+			for(int i = 0; i < items.size(); ++i){
+				if(maxX <= items.get(i).x){
+					maxX = items.get(i).x;
+				 	index_X = i; 	
+				}
+			}
+			//Uses the max X coord as the achor point
+			achor = items.get(index_X);
+			//Removes the achor from the hull list and returns the achor.  
+		 	convex_hull.remove(index_X); 	
+			return achor; 
+		}
+	//Removes the achor from the list and returns the achor. 
+	convex_hull.remove(index); 
+	return achor; 
+	}
+	
+	//Method sorts the points radially by angle from the achor point. 
+	private static void sortPoints(){
+		//Sets convex_hull to the list of points. 
+		convex_hull = items; 
+		if(convex_hull.size() > 2){
+			//Gets the achor from the list of points. 
+	  	achorPoint = anchorPointSearch(); 		
+			//Creates instance of the comparator object which sorts the list of points by their angle from the achor point.
+			ConvexHullComp compare = new ConvexHullComp(achorPoint);  
+
+			//Using the Collections class sort method, sorts the convex hull list of points radially with the comparator object. 
+			Collections.sort(convex_hull,compare);
+			//Adds the achorpoint to the beginning of sorted list.
+	 		convex_hull.add(0,achorPoint);
+			//Adds the achorpoint to the end of the sorted list. 
+			convex_hull.add(achorPoint);
+		}
+	}
+
+	//Method returns a List of all the points on the Convex_Hull of the set of points. 	
+	public static List<Point> scan(){
+		//Sorts the points of the convex_hull radially from the achor point. 
+		sortPoints();
+		
+		//If convex hull is less than or equal to 2 then return the convex as is. 
+		if(convex_hull.size() <= 2){
+			return convex_hull; 
+		}
+		
+		//Calculates the end point of the sorted list. 
+		int end = convex_hull.size()-1;
+		//Previous position
+		int previous = 0; 
+		//Current position. 	
+		int current = 1;
+		
+		//Gets the first point. 	
+		Point first = convex_hull.get(0); 
+		//Gets the last point. 	
+		Point last = convex_hull.get(end);
+		//Gets the previous point. 
+		Point prev = convex_hull.get(previous); 
+		//Gets the current point. 
+		Point curr = convex_hull.get(current);
+		do{
+					//Gets the next point. 
+					Point next = convex_hull.get(current+1);
+				 	//Checks if the next point is part of the hull. 	
+					if(ccw(prev,curr,next) > 0 ){
+						//Sets the previous point to the current point. 
+						prev = curr;
+						//Sets the previous position to the current position. 
+						previous = current; 
+					}
+					//Otherwise. 
+					else{
+						//move previous position one back. 
+						previous--; 
+						//Sets the previous to its previous. 
+				 		prev = convex_hull.get(previous); 	
+						//remove the current point which is not part of the convex_hull. 
+						convex_hull.remove(current);
+				}
+				//Set the current position to after the previous position.
+				current = previous+1; 
+				//Set the current point to the current position. 
+				curr = convex_hull.get(current); 
+		}
+		//Do this while the current point is not the last point which is the achor.
+		while(curr != last); 
+		//Return the convex hull. 
+		return convex_hull; 	
+	}	
+/*	public static void main(String[] args){
+		Point p1 = new Point(4,4); 
+		Point p2 = new Point(7,2); 
+		Point p3 = new Point(5,1); 
+		Point p4 = new Point(6,0); 
+		Point p5 = new Point(8,3);
+		Point p6 = new Point(10,1);	
+		
+		Graham_Scan.addPoint(p1); 
+		Graham_Scan.addPoint(p2); 
+		Graham_Scan.addPoint(p3); 
+		Graham_Scan.addPoint(p4); 
+		Graham_Scan.addPoint(p5); 
+		Graham_Scan.addPoint(p6);
+	 	//Graham_Scan.sortPoints(); 
+		List<Point> result = Graham_Scan.scan(); 	
+		for(int i = 0; i < result.size(); i++){
+			System.out.println("X: " + result.get(i).x + " Y: " + result.get(i).y); 
+		 }
+	}*/
+}
+/*
+ * Custom comparator class to sort the convex hull points radially by thier angle from the achor point. 
+ */
+class ConvexHullComp implements Comparator<Point>{
+	//Used to use achorPoint as basis for the sort comparison. 
+	private Point achorPoint; 
+
+	//Constructor which takes into account an achor point to use for the compare method. 
+	public ConvexHullComp(Point achor){
+		achorPoint = achor; 
+	}
+	
+	//Used to determine whether a point resides on the left, on, or right of the line. 
+	private static int ccw(Point p1, Point p2, Point p3){
+		return ((p2.x - p1.x)*(p3.y-p1.y))-((p2.y-p1.y)*(p3.x-p1.x));
+	}
+
+	//Compares two Points in how far they are by angle from the achor point. 
+	public int compare(Point p1, Point p2){
+			//Point p2 is left of the point p1, therefore has a greater angle.  
+			if(ccw(achorPoint,p1,p2) > 0){
+							return -1; 
+			}
+			//Point p2 and point p1 are both equal in angle. 
+			if(ccw(achorPoint,p1,p2) == 0){
+							return 0; 
+			}
+
+			//Point p2 is to the right of point p1, therefore p1 is the leftmost greater angle. 
+			if(ccw(achorPoint,p1,p2) < 0){
+							return 1; 
+			}
+		return 0; 
+	}
+}
+
+
